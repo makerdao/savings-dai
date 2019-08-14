@@ -9,6 +9,7 @@ contract DSTokenLike {
 
 contract PotLike {
     mapping(address => mapping (address => uint)) public can;
+    function drip() external;
     function move(address, address, uint) external;
 }
 

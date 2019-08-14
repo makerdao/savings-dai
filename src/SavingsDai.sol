@@ -37,7 +37,7 @@ contract SavingsDai is DSNote {
         "Permit(address holder,address spender,uint256 nonce,uint256 expiry,bool allowed)"
     );
 
-    constructor(uint256 chainId_) public {
+    constructor(uint256 chainId_, address pot_) public {
         wards[msg.sender] = 1;
         DOMAIN_SEPARATOR = keccak256(abi.encode(
             keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
