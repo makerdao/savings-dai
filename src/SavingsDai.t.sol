@@ -114,7 +114,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(self), 0);
         assertEq(pot.pie(address(ali)), 100 ether);
         ali.hope(address(join));
-        ali.join(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
         assertEq(sDai.balanceOf(address(ali)), 100 ether);
         assertEq(sDai.totalSupply(), 100 ether);
     }
@@ -138,7 +138,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(ali)), 100 ether);
 
         ali.hope(address(join));
-        ali.join(address(join), address(ali), pot.pie(address(ali)));
+        ali.exit(address(join), address(ali), pot.pie(address(ali)));
         assertEq(sDai.balanceOf(address(ali)), 100 ether);
     }
 
@@ -152,14 +152,14 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(ali)), 100 ether);
 
         ali.hope(address(join));
-        ali.join(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
         assertEq(pot.pie(address(ali)), 0);
         assertEq(pot.pie(address(join)), 100 ether);
         assertEq(sDai.balanceOf(address(ali)), 100 ether);
         assertEq(sDai.totalSupply(), 100 ether);
 
         ali.approve(address(sDai), address(join), 100 ether);
-        ali.exit(address(join), address(ali), 100 ether);
+        ali.join(address(join), address(ali), 100 ether);
         assertEq(sDai.totalSupply(), 0);
         assertEq(sDai.balanceOf(address(ali)), 0);
         assertEq(pot.pie(address(ali)), 100 ether);
@@ -182,14 +182,14 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(ali)), 100 ether);
 
         ali.hope(address(join));
-        ali.join(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
         assertEq(pot.pie(address(ali)), 0);
         assertEq(pot.pie(address(join)), 100 ether);
         assertEq(sDai.balanceOf(address(ali)), 100 ether);
         assertEq(sDai.totalSupply(), 100 ether);
 
         ali.approve(address(sDai), address(join), 100 ether);
-        ali.exit(address(join), address(ali), 100 ether);
+        ali.join(address(join), address(ali), 100 ether);
         assertEq(sDai.totalSupply(), 0);
         assertEq(sDai.balanceOf(address(ali)), 0);
         assertEq(pot.pie(address(ali)), 100 ether);
@@ -234,9 +234,9 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(cam)), 100 ether);
 
         ali.hope(address(join));
-        ali.join(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
         bob.hope(address(join));
-        bob.join(address(join), address(bob), 100 ether);
+        bob.exit(address(join), address(bob), 100 ether);
         assertEq(pot.pie(address(ali)), 0);
         assertEq(pot.pie(address(bob)), 0);
         assertEq(pot.pie(address(join)), 200 ether);
@@ -249,8 +249,8 @@ contract SavingsDaiTest is DSTest {
 
         ali.approve(address(sDai), address(join), 100 ether);
         bob.approve(address(sDai), address(join), 100 ether);
-        ali.exit(address(join), address(ali), 100 ether);
-        bob.exit(address(join), address(bob), 100 ether);
+        ali.join(address(join), address(ali), 100 ether);
+        bob.join(address(join), address(bob), 100 ether);
         assertEq(sDai.totalSupply(), 0);
         assertEq(sDai.balanceOf(address(ali)), 0);
         assertEq(sDai.balanceOf(address(bob)), 0);
@@ -292,7 +292,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(bob)), 0);
 
         ali.hope(address(join));
-        ali.join(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
 
         assertEq(sDai.balanceOf(address(ali)), 100 ether);
         assertEq(sDai.balanceOf(address(bob)), 0);
@@ -303,7 +303,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(sDai.balanceOf(address(bob)), 100 ether);
 
         bob.approve(address(sDai), address(join), 100 ether);
-        bob.exit(address(join), address(bob), 100 ether);
+        bob.join(address(join), address(bob), 100 ether);
 
         assertEq(sDai.totalSupply(), 0);
         assertEq(pot.pie(address(ali)), 0);
@@ -345,7 +345,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(ali)), 100 ether);
 
         ali.hope(address(join));
-        ali.join(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
         assertEq(pot.pie(address(ali)), 0);
         assertEq(pot.pie(address(join)), 100 ether);
         assertEq(sDai.balanceOf(address(ali)), 100 ether);
@@ -364,7 +364,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(pot.pie(address(bob)), bobWad);
 
         bob.hope(address(join));
-        bob.join(address(join), address(bob), bobWad);
+        bob.exit(address(join), address(bob), bobWad);
         assertEq(pot.pie(address(bob)), 0);
         assertEq(pot.pie(address(join)), (100 ether + bobWad));
 
@@ -375,10 +375,10 @@ contract SavingsDaiTest is DSTest {
         pot.drip();
 
         ali.approve(address(sDai), address(join), 100 ether);
-        ali.exit(address(join), address(ali), 100 ether);
+        ali.join(address(join), address(ali), 100 ether);
 
         bob.approve(address(sDai), address(join), bobWad);
-        bob.exit(address(join), address(bob), bobWad);
+        bob.join(address(join), address(bob), bobWad);
 
         assertEq(sDai.totalSupply(), 0);
         assertEq(sDai.balanceOf(address(ali)), 0);

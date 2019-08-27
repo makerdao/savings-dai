@@ -20,11 +20,11 @@ contract sDaiJoin is DSNote{
         sDai = DSTokenLike(sDai_);
     }
     function join(address usr, uint wad) external note {
-        pot.move(msg.sender, address(this), wad);
-        sDai.mint(usr, wad);
-    }
-    function exit(address usr, uint wad) external note {
         sDai.burn(msg.sender, wad);
         pot.move(address(this), usr, wad);
+    }
+    function exit(address usr, uint wad) external note {
+        pot.move(msg.sender, address(this), wad);
+        sDai.mint(usr, wad);
     }
 }
