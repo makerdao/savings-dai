@@ -3,4 +3,4 @@
 	url = https://github.com/dapphub/ds-test
 [submodule "lib/dss"]
 	path = lib/dss
-	url = git@github.com:makerdao/dss.git
+	url = https://github.com/makerdao/dss
