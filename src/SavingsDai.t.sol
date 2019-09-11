@@ -259,55 +259,44 @@ contract SavingsDaiTest is DSTest {
         assertEq(vat.dai(address(cam)), rad(105 ether));
     }
 
-    // function test_different_users_exit_1d() public {
-    //     /**
-    //      * sDai is non-fungible. Adapter will return `pie` to whoever exits
-    //      * sDai.
-    //      */
-    //     pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
-    //     uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
-    //     hevm.warp(initialTime);
-    //     assertEq(sDai.totalSupply(), 0);
+    function test_different_users_exit_1d() public {
+        /**
+         * sDai is non-fungible. Adapter will return `dai` to whoever joins with
+         * sDai.
+         */
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
+        hevm.warp(initialTime);
+        assertEq(sDai.totalSupply(), 0);
 
-    //     Usr ali = new Usr(pot, vat);
-    //     Usr bob = new Usr(pot, vat);
+        Usr ali = new Usr(pot, vat);
+        ali.hope(address(join));
+        vat.move(self, address(ali), rad(100 ether));
 
-    //     pot.join(100 ether);
-    //     // pot.move(self, address(ali), 100 ether);
+        Usr bob = new Usr(pot, vat);
 
-    //     assertEq(pot.pie(self), 0);
-    //     assertEq(pot.pie(address(ali)), 100 ether);
-    //     assertEq(pot.pie(address(bob)), 0);
+        assertEq(vat.dai(address(ali)), rad(100 ether));
+        assertEq(vat.dai(address(bob)), 0);
 
-    //     ali.hope(address(join));
-    //     ali.exit(address(join), address(ali), 100 ether);
+        ali.exit(address(join), address(ali), 100 ether);
 
-    //     assertEq(sDai.balanceOf(address(ali)), 100 ether);
-    //     assertEq(sDai.balanceOf(address(bob)), 0);
+        assertEq(sDai.balanceOf(address(ali)), 100 ether);
+        assertEq(sDai.balanceOf(address(bob)), 0);
 
-    //     ali.transfer(address(sDai), address(bob), 100 ether);
+        ali.transfer(address(sDai), address(bob), 100 ether);
 
-    //     assertEq(sDai.balanceOf(address(ali)), 0);
-    //     assertEq(sDai.balanceOf(address(bob)), 100 ether);
+        assertEq(sDai.balanceOf(address(ali)), 0);
+        assertEq(sDai.balanceOf(address(bob)), 100 ether);
 
-    //     bob.approve(address(sDai), address(join), 100 ether);
-    //     bob.join(address(join), address(bob), 100 ether);
+        hevm.warp(initialTime + 1);
+        pot.drip();
 
-    //     assertEq(sDai.totalSupply(), 0);
-    //     assertEq(pot.pie(address(ali)), 0);
-    //     assertEq(pot.pie(address(bob)), 100 ether);
-    //     assertEq(pot.pie(address(join)), 0);
+        bob.approve(address(sDai), address(join), 100 ether);
+        bob.join(address(join), address(bob), 100 ether);
 
-    //     hevm.warp(initialTime + 1);
-    //     pot.drip();
-
-    //     bob.dsrExit(100 ether);
-    //     assertEq(pot.pie(address(ali)), 0);
-    //     assertEq(pot.pie(address(bob)), 0);
-    //     assertEq(vat.dai(address(pot)), 0);
-    //     assertEq(vat.dai(address(0)), 0);
-    //     assertEq(vat.dai(address(bob)), rad(105 ether));
-    // }
+        assertEq(vat.dai(address(ali)), 0);
+        assertEq(vat.dai(address(bob)), rad(105 ether));
+    }
 
     // function test_multiple_users_join_different_times_1d() public {
     //     /**
