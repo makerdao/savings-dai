@@ -28,8 +28,6 @@ contract sDaiJoin is DSNote{
 
     uint256 constant ONE = 10 ** 27;
 
-    event log(bytes32, uint);
-
     constructor(address vat_, address pot_, address sDai_) public {
         vat = VatLike(vat_);
         pot = PotLike(pot_);
