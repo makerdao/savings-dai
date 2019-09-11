@@ -40,6 +40,12 @@ contract Usr {
     function transfer(address token, address dst, uint wad) public {
         SavingsDai(token).transfer(dst, wad);
     }
+    function dsrJoin(uint wad) public {
+        pot.join(wad);
+    }
+    function dsrExit(uint wad) public {
+        pot.exit(wad);
+    }
 }
 
 contract SavingsDaiTest is DSTest {
@@ -191,75 +197,67 @@ contract SavingsDaiTest is DSTest {
         assertEq(vat.dai(address(ali)), rad(105 ether));
     }
 
-    // function test_multiple_users_sDai_equal_returns_as_pie_1d() public {
-    //     /**
-    //      * The goal of this test is to show that users who decide to
-    //      * use sDai do not earn more DSR than a user who stays in the DSR/pie
-    //      * i.e. the "pooling" that occurs with `pie` when users exit to sDai
-    //      * does not enable them greater gain than holding `pie`.
-    //      */
+    function test_multiple_users_sDai_equal_returns_as_dai_1d() public {
+        /**
+         * The goal of this test is to show that users who decide to
+         * use sDai do not earn more DSR than a user who just joins the DSR/pie
+         * i.e. the "pooling" that occurs with `pie` when users exit to sDai
+         * does not enable them greater gain than holding `pie`.
+         */
 
-    //     pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
-    //     uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
-    //     hevm.warp(initialTime);
-    //     assertEq(sDai.totalSupply(), 0);
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
+        hevm.warp(initialTime);
+        assertEq(sDai.totalSupply(), 0);
 
-    //     pot.join(100 ether);
-    //     Usr ali = new Usr(pot, vat);
-    //     // pot.move(self, address(ali), 100 ether);
+        Usr ali = new Usr(pot, vat);
+        ali.hope(address(join));
+        vat.move(self, address(ali), rad(100 ether));
 
-    //     Usr bob = new Usr(pot, vat);
-    //     vat.suck(self, self, rad(100 ether));
-    //     pot.join(100 ether);
-    //     // pot.move(self, address(bob), 100 ether);
+        Usr bob = new Usr(pot, vat);
+        bob.hope(address(join));
+        vat.suck(self, self, rad(100 ether));
+        vat.move(self, address(bob), rad(100 ether));
 
-    //     Usr cam = new Usr(pot, vat);
-    //     vat.suck(self, self, rad(100 ether));
-    //     pot.join(100 ether);
-    //     // pot.move(self, address(cam), 100 ether);
+        Usr cam = new Usr(pot, vat);
+        vat.suck(self, self, rad(100 ether));
+        vat.move(self, address(cam), rad(100 ether));
+        cam.hope(address(pot));
 
-    //     assertEq(pot.pie(self), 0);
-    //     assertEq(pot.pie(address(ali)), 100 ether);
-    //     assertEq(pot.pie(address(bob)), 100 ether);
-    //     assertEq(pot.pie(address(cam)), 100 ether);
+        assertEq(vat.dai(address(ali)), rad(100 ether));
+        assertEq(vat.dai(address(bob)), rad(100 ether));
+        assertEq(vat.dai(address(cam)), rad(100 ether));
 
-    //     ali.hope(address(join));
-    //     ali.exit(address(join), address(ali), 100 ether);
-    //     bob.hope(address(join));
-    //     bob.exit(address(join), address(bob), 100 ether);
-    //     assertEq(pot.pie(address(ali)), 0);
-    //     assertEq(pot.pie(address(bob)), 0);
-    //     assertEq(pot.pie(address(join)), 200 ether);
-    //     assertEq(sDai.balanceOf(address(ali)), 100 ether);
-    //     assertEq(sDai.balanceOf(address(bob)), 100 ether);
-    //     assertEq(sDai.totalSupply(), 200 ether);
+        ali.exit(address(join), address(ali), 100 ether);
+        bob.exit(address(join), address(bob), 100 ether);
+        cam.dsrJoin(100 ether); // cam needs to join directly
 
-    //     hevm.warp(initialTime + 1);
-    //     pot.drip();
+        assertEq(pot.pie(address(cam)), 100 ether);
+        assertEq(pot.pie(address(join)), 200 ether);
+        assertEq(sDai.balanceOf(address(ali)), 100 ether);
+        assertEq(sDai.balanceOf(address(bob)), 100 ether);
+        assertEq(sDai.totalSupply(), 200 ether);
 
-    //     ali.approve(address(sDai), address(join), 100 ether);
-    //     bob.approve(address(sDai), address(join), 100 ether);
-    //     ali.join(address(join), address(ali), 100 ether);
-    //     bob.join(address(join), address(bob), 100 ether);
-    //     assertEq(sDai.totalSupply(), 0);
-    //     assertEq(sDai.balanceOf(address(ali)), 0);
-    //     assertEq(sDai.balanceOf(address(bob)), 0);
-    //     assertEq(pot.pie(address(ali)), 100 ether);
-    //     assertEq(pot.pie(address(bob)), 100 ether);
-    //     assertEq(pot.pie(address(cam)), 100 ether);
-    //     assertEq(pot.pie(address(join)), 0);
+        hevm.warp(initialTime + 1);
+        pot.drip();
 
-    //     ali.dsrExit(100 ether);
-    //     bob.dsrExit(100 ether);
-    //     cam.dsrExit(100 ether);
-    //     assertEq(pot.pie(address(ali)), 0);
-    //     assertEq(pot.pie(address(bob)), 0);
-    //     assertEq(pot.pie(address(cam)), 0);
-    //     assertEq(vat.dai(address(pot)), 0);
-    //     assertEq(vat.dai(address(ali)), rad(105 ether));
-    //     assertEq(vat.dai(address(bob)), rad(105 ether));
-    //     assertEq(vat.dai(address(cam)), rad(105 ether));
-    // }
+        ali.approve(address(sDai), address(join), 100 ether);
+        bob.approve(address(sDai), address(join), 100 ether);
+        ali.join(address(join), address(ali), 100 ether);
+        bob.join(address(join), address(bob), 100 ether);
+        cam.dsrExit(100 ether);
+
+        assertEq(sDai.totalSupply(), 0);
+        assertEq(sDai.balanceOf(address(ali)), 0);
+        assertEq(sDai.balanceOf(address(bob)), 0);
+
+        assertEq(pot.pie(address(join)), 0);
+        assertEq(vat.dai(address(pot)), 0);
+
+        assertEq(vat.dai(address(ali)), rad(105 ether));
+        assertEq(vat.dai(address(bob)), rad(105 ether));
+        assertEq(vat.dai(address(cam)), rad(105 ether));
+    }
 
     // function test_different_users_exit_1d() public {
     //     /**
