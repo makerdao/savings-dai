@@ -261,7 +261,7 @@ contract SavingsDaiTest is DSTest {
 
     function test_different_users_exit_1d() public {
         /**
-         * sDai is non-fungible. Adapter will return `dai` to whoever joins with
+         * sDai is fungible. Adapter will return `dai` to whoever joins with
          * sDai.
          */
         pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
@@ -298,78 +298,63 @@ contract SavingsDaiTest is DSTest {
         assertEq(vat.dai(address(bob)), rad(105 ether));
     }
 
-    // function test_multiple_users_join_different_times_1d() public {
-    //     /**
-    //      * The goal of this test is to show the impact of users joining
-    //      * at different times (i.e. different drip rates)
-    //      * Essentially 1 sDai = 1 pie, but how much pie you get is determined by
-    //      * both how much Dai you join as well as when you do it
-    //      * join after a drip will mean you get fewer pie/sDai than an earlier user
-    //      * but this will still result in the same value
-    //      * (i.e. earnings are determined by the length of time you hold not when you start)
-    //      */
+    function test_multiple_users_join_different_times_1d() public {
+        /**
+         * The goal of this test is to show the impact of users joining
+         * at different times (i.e. different drip rates)
+         * Essentially 1 sDai = 1 pie, but how much pie you get is determined by
+         * both how much Dai you join as well as when you do it
+         * join after a drip will mean you get fewer pie/sDai than an earlier user
+         * but this will still result in the same value
+         * (i.e. earnings are determined by the length of time you hold
+         * not when you start)
+         */
 
-    //     pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
-    //     uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
-    //     hevm.warp(initialTime);
-    //     assertEq(sDai.totalSupply(), 0);
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
+        hevm.warp(initialTime);
+        assertEq(sDai.totalSupply(), 0);
 
-    //     // Ali joins into sDai with 100 dai
-    //     pot.join(100 ether);
-    //     Usr ali = new Usr(pot, vat);
-    //     // pot.move(self, address(ali), 100 ether);
-    //     assertEq(pot.pie(self), 0);
-    //     assertEq(pot.pie(address(ali)), 100 ether);
+        // Ali joins into sDai with 100 dai
+        Usr ali = new Usr(pot, vat);
+        vat.move(self, address(ali), rad(100 ether));
+        ali.hope(address(join));
+        ali.exit(address(join), address(ali), 100 ether);
+        assertEq(sDai.balanceOf(address(ali)), 100 ether);
+        assertEq(sDai.totalSupply(), 100 ether);
+        assertEq(pot.pie(address(join)), 100 ether);
 
-    //     ali.hope(address(join));
-    //     ali.exit(address(join), address(ali), 100 ether);
-    //     assertEq(pot.pie(address(ali)), 0);
-    //     assertEq(pot.pie(address(join)), 100 ether);
-    //     assertEq(sDai.balanceOf(address(ali)), 100 ether);
-    //     assertEq(sDai.totalSupply(), 100 ether);
+        // Drip
+        hevm.warp(initialTime + 1);
+        pot.drip();
 
-    //     // Drip
-    //     hevm.warp(initialTime + 1);
-    //     pot.drip();
+        // // Bob joins into sDai with 100 dai
+        Usr bob = new Usr(pot, vat);
+        bob.hope(address(join));
+        vat.suck(self, self, rad(100 ether));
+        vat.move(self, address(bob), rad(100 ether));
+        uint bobPie = mul(100 ether, ONE) / pot.chi();
+        bob.exit(address(join), address(bob), 100 ether);
 
-    //     // // Bob joins into sDai with 100 dai
-    //     Usr bob = new Usr(pot, vat);
-    //     vat.suck(self, self, rad(100 ether));
-    //     uint bobWad = mul(100 ether, ONE) / pot.chi();
-    //     pot.join(bobWad);
-    //     // pot.move(self, address(bob), bobWad);
-    //     assertEq(pot.pie(address(bob)), bobWad);
+        assertEq(pot.pie(address(join)), (100 ether + bobPie));
+        assertEq(sDai.balanceOf(address(bob)), bobPie);
+        assertEq(sDai.totalSupply(), (100 ether + bobPie));
 
-    //     bob.hope(address(join));
-    //     bob.exit(address(join), address(bob), bobWad);
-    //     assertEq(pot.pie(address(bob)), 0);
-    //     assertEq(pot.pie(address(join)), (100 ether + bobWad));
+        hevm.warp(initialTime + 2);
+        pot.drip();
 
-    //     assertEq(sDai.balanceOf(address(bob)), bobWad);
-    //     assertEq(sDai.totalSupply(), (100 ether + bobWad));
+        ali.approve(address(sDai), address(join), 100 ether);
+        ali.join(address(join), address(ali), 100 ether);
 
-    //     hevm.warp(initialTime + 2);
-    //     pot.drip();
+        bob.approve(address(sDai), address(join), bobPie);
+        bob.join(address(join), address(bob), bobPie);
 
-    //     ali.approve(address(sDai), address(join), 100 ether);
-    //     ali.join(address(join), address(ali), 100 ether);
+        assertEq(sDai.totalSupply(), 0);
+        assertEq(sDai.balanceOf(address(ali)), 0);
+        assertEq(sDai.balanceOf(address(bob)), 0);
 
-    //     bob.approve(address(sDai), address(join), bobWad);
-    //     bob.join(address(join), address(bob), bobWad);
-
-    //     assertEq(sDai.totalSupply(), 0);
-    //     assertEq(sDai.balanceOf(address(ali)), 0);
-    //     assertEq(sDai.balanceOf(address(bob)), 0);
-    //     assertEq(pot.pie(address(ali)), 100 ether);
-    //     assertEq(pot.pie(address(bob)), bobWad);
-    //     assertEq(pot.pie(address(join)), 0);
-
-    //     ali.dsrExit(100 ether);
-    //     bob.dsrExit(bobWad);
-    //     assertEq(pot.pie(address(ali)), 0);
-    //     assertEq(pot.pie(address(bob)), 0);
-    //     assertEq(vat.dai(address(pot)), 0);
-    //     assertEq(vat.dai(address(ali)), rad(110.25 ether));
-    //     assertEq(vat.dai(address(bob)), 104999999999999999999737500000000000000000000000); // 105 with rounding imprecision
-    // }
+        assertEq(vat.dai(address(pot)), 0);
+        assertEq(vat.dai(address(ali)), rad(110.25 ether));
+        assertEq(vat.dai(address(bob)), 104999999999999999999737500000000000000000000000); // 105 with rounding imprecision
+    }
 }

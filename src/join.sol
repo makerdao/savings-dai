@@ -49,7 +49,8 @@ contract sDaiJoin is DSNote{
 
     function exit(address usr, uint wad) external note {
         vat.move(msg.sender, address(this), mul(wad, ONE));
-        pot.join(mul(wad, ONE) / pot.chi());
-        sDai.mint(usr, wad);
+        uint pie = mul(wad, ONE) / pot.chi();
+        pot.join(pie);
+        sDai.mint(usr, pie);
     }
 }
