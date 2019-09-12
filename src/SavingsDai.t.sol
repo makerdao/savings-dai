@@ -101,10 +101,6 @@ contract SavingsDaiTest is DSTest {
         return new SavingsDai(99);
     }
 
-    function testFail_basic_sanity() public {
-        assertTrue(false);
-    }
-
     function test_basic_deploy() public {
         assertEq(address(pot.vat()), address(vat));
         assertEq(address(join.pot()), address(pot));
