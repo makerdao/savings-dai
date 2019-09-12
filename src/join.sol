@@ -21,7 +21,7 @@ contract PotLike {
     function exit(uint) external;
 }
 
-contract sDaiJoin is DSNote{
+contract SavingsDaiJoin is DSNote{
     VatLike public vat;
     PotLike public pot;
     DSTokenLike public sDai;

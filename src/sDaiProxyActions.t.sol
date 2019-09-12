@@ -4,7 +4,7 @@ import "ds-test/test.sol";
 
 import {sDaiProxyActions} from "./sDaiProxyActions.sol";
 
-import {sDaiJoin} from "./join.sol";
+import {SavingsDaiJoin} from "./join.sol";
 import {SavingsDai} from "./SavingsDai.sol";
 import {Vat} from "dss/vat.sol";
 import {Pot} from "dss/pot.sol";
@@ -18,19 +18,18 @@ contract Hevm {
 
 contract ProxyCalls {
     DSProxy proxy;
-    address sDaiProxyActions;
+    address sDaiActions;
 
-
-    function dsrJoin(address, address, uint) public {
-        proxy.execute(sDaiProxyActions, msg.data);
+    function sDaiJoin(address, address, uint) public {
+        proxy.execute(sDaiActions, msg.data);
     }
 
-    function dsrExit(address, address, uint) public {
-        proxy.execute(sDaiProxyActions, msg.data);
+    function sDaiExit(address, address, uint) public {
+        proxy.execute(sDaiActions, msg.data);
     }
 
-    function dsrExitAll(address, address) public {
-        proxy.execute(sDaiProxyActions, msg.data);
+    function sDaiExitAll(address, address) public {
+        proxy.execute(sDaiActions, msg.data);
     }
 }
 
@@ -41,8 +40,6 @@ contract FakeUser {
 contract sDaiProxyActionsTest is DSTest, ProxyCalls {
     Hevm hevm;
 
-    sDaiJoin join;
-
     ProxyRegistry registry;
 
     Vat vat;
@@ -52,9 +49,7 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
     DaiJoin daiJoin;
 
     SavingsDai sDai;
-    sDaiJoin savingsJoin;
-
-    address sDaiActions;
+    SavingsDaiJoin savingsJoin;
 
     address vow;
     address self;
@@ -99,13 +94,15 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
 
         dai = new Dai(99);
         daiJoin = new DaiJoin(address(vat), address(dai));
+        dai.rely(address(daiJoin));
+        vat.suck(self, address(daiJoin), rad(100 ether));
         dai.mint(self, 100 ether);
     }
 
     function setupSavingsDai() internal {
         sDai = new SavingsDai(99);
-        savingsJoin = new sDaiJoin(address(vat), address(pot), address(sDai));
-        sDai.rely(address(join));
+        savingsJoin = new SavingsDaiJoin(address(vat), address(pot), address(sDai));
+        sDai.rely(address(savingsJoin));
     }
 
     function test_basic_deploy() public {
@@ -115,26 +112,32 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         assertEq(address(daiJoin.vat()), address(vat));
         assertEq(address(daiJoin.dai()), address(dai));
         assertEq(dai.balanceOf(self), 100 ether);
+        assertEq(address(registry.proxies(self)), address(proxy));
     }
 
     function testDSRSimpleCase() public {
-        // this.file(address(pot), "dsr", uint(1.05 * 10 ** 27)); // 5% per second
-        // uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
-        // hevm.warp(initialTime);
-        // dai.mint(address(this), 50 ether);
-        // dai.approve(address(proxy), 50 ether);
-        // assertEq(dai.balanceOf(address(this)), 50 ether);
-        // assertEq(pot.pie(address(this)), 0 ether);
-        // this.nope(address(vat), address(daiJoin)); // Remove vat permission for daiJoin to test it is correctly re-activate in dsrExit
-        // this.dsrJoin(address(daiJoin), address(pot), 50 ether);
-        // assertEq(dai.balanceOf(address(this)), 0 ether);
-        // assertEq(pot.pie(address(proxy)) * pot.chi(), 50 ether * ONE);
-        // hevm.warp(initialTime + 1); // Moved 1 second
-        // pot.drip();
-        // assertEq(pot.pie(address(proxy)) * pot.chi(), 52.5 ether * ONE); // Now the equivalent DAI amount is 2.5 DAI extra
-        // this.dsrExit(address(daiJoin), address(pot), 52.5 ether);
-        // assertEq(dai.balanceOf(address(this)), 52.5 ether);
-        // assertEq(pot.pie(address(proxy)), 0);
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
+        hevm.warp(initialTime);
+
+        dai.approve(address(proxy), 100 ether);
+        assertEq(dai.balanceOf(self), 100 ether);
+
+        this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
+        assertEq(dai.balanceOf(self), 0 ether);
+        assertEq(sDai.balanceOf(address(proxy)), 100 ether);
+
+        hevm.warp(initialTime + 1); // Moved 1 second
+        pot.drip();
+        assertEq(pot.pie(address(savingsJoin)) * pot.chi(), 105 ether * ONE); // Now the equivalent DAI amount is 2.5 DAI extra
+        this.sDaiExit(address(daiJoin), address(savingsJoin), 100 ether);
+        assertEq(dai.balanceOf(self), 105 ether);
+        assertEq(sDai.balanceOf(address(proxy)), 0 ether);
+        assertEq(pot.pie(address(proxy)), 0);
+        assertEq(vat.dai(address(proxy)), 0);
+        assertEq(vat.dai(address(savingsJoin)), 0);
+        assertEq(vat.dai(address(daiJoin)), rad(105 ether));
+        assertEq(dai.balanceOf(address(proxy)), 0 ether);
     }
 
     // function testDSRRounding() public {

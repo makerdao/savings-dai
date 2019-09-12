@@ -40,7 +40,14 @@ contract JugLike {
     function drip(bytes32) public;
 }
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
+// WARNING: These functions meant to be used as a a library for a DSProxy. Some are unsafe if you call them directly. //
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! //
+
 contract sDaiProxyActions {
+
+    event log(bytes32, uint);
+
     uint256 constant ONE = 10 ** 27;
 
     // Internal functions
@@ -86,8 +93,10 @@ contract sDaiProxyActions {
         PotLike(pot).drip();
         // Joins wad amount to the vat balance
         daiJoin_join(daiJoin, address(this), wad);
-        // Approves the pot to take out DAI from the proxy's balance in the vat
-        DaiJoinLike(daiJoin).vat().hope(savingsJoin);
+        // Approves the adapter to take out DAI from the proxy's balance in the vat
+        if (VatLike(vat).can(address(this), address(savingsJoin)) == 0) {
+            VatLike(vat).hope(savingsJoin);
+        }
         // Exits the wad value (equivalent to the DAI wad amount) to Savings Dai
         SavingsJoinLike(savingsJoin).exit(address(this), wad);
     }
@@ -105,8 +114,9 @@ contract sDaiProxyActions {
         // Exits DAI from the sDai
         DSTokenLike(sDai).approve(savingsJoin, wad);
         // Join Savings Dai back into the Vat
-        SavingsJoinLike(savingsJoin).join(msg.sender, wad);
+        SavingsJoinLike(savingsJoin).join(address(this), wad);
         // Checks the actual balance of DAI in the vat after the pot exit
+        uint pie = mul(PotLike(pot).chi(), wad) / ONE;
         uint bal = VatLike(vat).dai(address(this));
         // Allows adapter to access to proxy's DAI balance in the vat
         if (VatLike(vat).can(address(this), address(daiJoin)) == 0) {
@@ -116,7 +126,7 @@ contract sDaiProxyActions {
         // Otherwise it will do the maximum DAI balance in the vat
         DaiJoinLike(daiJoin).exit(
             msg.sender,
-            bal >= mul(wad, ONE) ? wad : bal / ONE
+            bal >= mul(pie, ONE) ? pie : bal / ONE
         );
     }
 

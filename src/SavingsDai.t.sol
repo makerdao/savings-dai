@@ -2,7 +2,7 @@ pragma solidity ^0.5.10;
 
 import "ds-test/test.sol";
 
-import {sDaiJoin} from "./join.sol";
+import {SavingsDaiJoin} from "./join.sol";
 import {SavingsDai} from "./SavingsDai.sol";
 import {Vat} from "../lib/dss/src/vat.sol";
 import {Pot} from "../lib/dss/src/pot.sol";
@@ -29,10 +29,10 @@ contract Usr {
         vat.nope(usr);
     }
     function join(address join_, address usr, uint wad) public {
-        sDaiJoin(join_).join(usr, wad);
+        SavingsDaiJoin(join_).join(usr, wad);
     }
     function exit(address join_, address usr, uint wad) public {
-        sDaiJoin(join_).exit(usr, wad);
+        SavingsDaiJoin(join_).exit(usr, wad);
     }
     function approve(address token, address usr, uint wad) public {
         SavingsDai(token).approve(usr, wad);
@@ -54,7 +54,7 @@ contract SavingsDaiTest is DSTest {
     SavingsDai sDai;
     Vat vat;
     Pot pot;
-    sDaiJoin join;
+    SavingsDaiJoin join;
 
     address vow;
     address self;
@@ -81,7 +81,7 @@ contract SavingsDaiTest is DSTest {
         setupDss();
 
         sDai = createToken();
-        join = new sDaiJoin(address(vat), address(pot), address(sDai));
+        join = new SavingsDaiJoin(address(vat), address(pot), address(sDai));
         sDai.rely(address(join));
     }
 
