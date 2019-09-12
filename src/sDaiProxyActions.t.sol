@@ -2,7 +2,7 @@ pragma solidity >=0.5.0;
 
 import "ds-test/test.sol";
 
-import "./sDaiProxyActions.sol";
+import {sDaiProxyActions} from "./sDaiProxyActions.sol";
 
 import {sDaiJoin} from "./join.sol";
 import {SavingsDai} from "./SavingsDai.sol";
@@ -11,6 +11,10 @@ import {Pot} from "dss/pot.sol";
 import {Dai} from "dss/dai.sol";
 import {DaiJoin} from "dss/join.sol";
 import {ProxyRegistry, DSProxyFactory, DSProxy} from "proxy-registry/ProxyRegistry.sol";
+
+contract Hevm {
+    function warp(uint256) public;
+}
 
 contract ProxyCalls {
     DSProxy proxy;
@@ -34,7 +38,7 @@ contract FakeUser {
 
 }
 
-contract sDaiProxyActionsTest is ProxyCalls {
+contract sDaiProxyActionsTest is DSTest, ProxyCalls {
     Hevm hevm;
 
     sDaiJoin join;
@@ -49,6 +53,8 @@ contract sDaiProxyActionsTest is ProxyCalls {
 
     SavingsDai sDai;
     sDaiJoin savingsJoin;
+
+    address sDaiActions;
 
     address vow;
     address self;
@@ -77,7 +83,7 @@ contract sDaiProxyActionsTest is ProxyCalls {
 
         DSProxyFactory factory = new DSProxyFactory();
         registry = new ProxyRegistry(address(factory));
-        dssProxyActions = address(new sDaiProxyActions());
+        sDaiActions = address(new sDaiProxyActions());
         proxy = DSProxy(registry.build());
     }
 
