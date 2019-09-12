@@ -16,7 +16,8 @@ contract VatLike {
 }
 
 contract PotLike {
-    uint public chi;
+    function chi() public returns(uint);
+    function pie(address) public returns(uint);
     function join(uint) external;
     function exit(uint) external;
 }
@@ -35,14 +36,26 @@ contract SavingsDaiJoin is DSNote{
         vat.hope(address(pot));
     }
 
+    function add(uint x, uint y) internal pure returns (uint z) {
+        require((z = x + y) >= x);
+    }
+
     function mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x);
     }
 
     function join(address usr, uint wad) external note {
         sDai.burn(msg.sender, wad);
+        uint bal = vat.dai(address(this));
         pot.exit(wad);
-        vat.move(address(this), usr, mul(wad, pot.chi()));
+        uint dai = mul(wad, pot.chi());
+
+        // If the new balance minus the returned pie is dusty
+        // We should add the dust back in before moving from the Vat to the usr
+        if (vat.dai(address(this)) - mul(wad, pot.chi()) <= ONE + 1 / ONE) {
+            dai += vat.dai(address(this)) - mul(wad, pot.chi());
+        }
+        vat.move(address(this), usr, dai);
     }
 
     function exit(address usr, uint wad) external note {

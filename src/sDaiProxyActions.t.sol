@@ -115,7 +115,7 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         assertEq(address(registry.proxies(self)), address(proxy));
     }
 
-    function testDSRSimpleCase() public {
+    function testDSRSimpleCase_0s() public {
         pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
         uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
         hevm.warp(initialTime);
@@ -123,7 +123,29 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         dai.approve(address(proxy), 100 ether);
         assertEq(dai.balanceOf(self), 100 ether);
 
-        // this.nope(address(vat), address(daiJoin)); // Remove vat permission for daiJoin to test it is correctly re-activate in sDaiExit
+        this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
+        assertEq(dai.balanceOf(self), 0 ether);
+        assertEq(sDai.balanceOf(address(proxy)), 100 ether);
+
+        assertEq(pot.pie(address(savingsJoin)) * pot.chi(), rad(100 ether)); // Now the equivalent DAI amount is 5 DAI extra
+        this.sDaiExit(address(daiJoin), address(savingsJoin), 100 ether);
+        assertEq(dai.balanceOf(self), 100 ether);
+        assertEq(sDai.balanceOf(address(proxy)), 0 ether);
+        assertEq(pot.pie(address(proxy)), 0);
+        assertEq(vat.dai(address(proxy)), 0);
+        assertEq(vat.dai(address(savingsJoin)), 0);
+        assertEq(vat.dai(address(daiJoin)), rad(100 ether));
+        assertEq(dai.balanceOf(address(proxy)), 0 ether);
+    }
+
+    function testDSRSimpleCase_1s() public {
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 0; // Initial time set to 0 to avoid any intial rounding
+        hevm.warp(initialTime);
+
+        dai.approve(address(proxy), 100 ether);
+        assertEq(dai.balanceOf(self), 100 ether);
+
         this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
         assertEq(dai.balanceOf(self), 0 ether);
         assertEq(sDai.balanceOf(address(proxy)), 100 ether);
@@ -149,10 +171,9 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         dai.approve(address(proxy), 100 ether);
         assertEq(dai.balanceOf(self), 100 ether);
 
-        // this.nope(address(vat), address(daiJoin)); // Remove vat permission for daiJoin to test it is correctly re-activate in dsrExit
         this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
         assertEq(dai.balanceOf(self), 0 ether);
-        // Due rounding the DAI equivalent is not the same than initial wad amount
+        // Due to Chi the sDAI equivalent is not the same than initial wad amount
         assertEq(sDai.balanceOf(address(proxy)), 95238095238095238095);
         hevm.warp(initialTime + 1);
         pot.drip(); // Just necessary to check in this test the updated value of chi
@@ -163,36 +184,45 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         assertEq(vat.dai(address(daiJoin)), 104999999999999999999000000000000000000000000000);
     }
 
-    // function testDSRRounding2() public {
-    //     this.file(address(pot), "dsr", uint(1.03434234324 * 10 ** 27));
-    //     uint initialTime = 1;
-    //     hevm.warp(initialTime);
-    //     uint cdp = this.open(address(manager), "ETH");
-    //     this.lockETHAndDraw.value(1 ether)(address(manager), address(jug), address(ethJoin), address(daiJoin), cdp, 50 ether);
-    //     dai.approve(address(proxy), 50 ether);
-    //     assertEq(dai.balanceOf(self), 50 ether);
-    //     assertEq(pot.pie(self), 0 ether);
-    //     this.nope(address(vat), address(daiJoin)); // Remove vat permission for daiJoin to test it is correctly re-activate in dsrExit
-    //     this.dsrJoin(address(daiJoin), address(pot), 50 ether);
-    //     assertEq(pot.pie(address(proxy)) * pot.chi(), 49999999999999999999993075745400000000000000000);
-    //     assertEq(vat.dai(address(proxy)), mul(50 ether, ONE) - 49999999999999999999993075745400000000000000000);
-    //     this.dsrExit(address(daiJoin), address(pot), 50 ether);
-    //     // In this case we get the full 50 DAI back as we also use (for the exit) the dust that remained in the proxy DAI balance in the vat
-    //     // The proxy function tries to return the wad amount if there is enough balance to do it
-    //     assertEq(dai.balanceOf(self), 50 ether);
-    // }
+    function testDSRRounding2() public {
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 1;
+        hevm.warp(initialTime);
 
-    // function testDSRExitAll() public {
-    //     this.file(address(pot), "dsr", uint(1.03434234324 * 10 ** 27));
-    //     uint initialTime = 1;
-    //     hevm.warp(initialTime);
-    //     uint cdp = this.open(address(manager), "ETH");
-    //     this.lockETHAndDraw.value(1 ether)(address(manager), address(jug), address(ethJoin), address(daiJoin), cdp, 50 ether);
-    //     this.nope(address(vat), address(daiJoin)); // Remove vat permission for daiJoin to test it is correctly re-activate in dsrExitAll
-    //     dai.approve(address(proxy), 50 ether);
-    //     this.dsrJoin(address(daiJoin), address(pot), 50 ether);
-    //     this.dsrExitAll(address(daiJoin), address(pot));
-    //     // In this case we get 49.999 DAI back as the returned amount is based purely in the pie amount
-    //     assertEq(dai.balanceOf(self), 49999999999999999999);
-    // }
+        dai.approve(address(proxy), 100 ether);
+        assertEq(dai.balanceOf(self), 100 ether);
+
+        this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
+        assertEq(dai.balanceOf(self), 0 ether);
+        // Due to Chi the sDAI equivalent is not the same than initial wad amount
+        assertEq(sDai.balanceOf(address(proxy)), 95238095238095238095);
+        assertEq(sDai.totalSupply(), 95238095238095238095);
+
+        assertEq(pot.pie(address(savingsJoin)) * pot.chi(), 99999999999999999999750000000000000000000000000);
+        assertEq(vat.dai(address(savingsJoin)), mul(100 ether, ONE) - 99999999999999999999750000000000000000000000000);
+        this.sDaiExit(address(daiJoin), address(savingsJoin), 95238095238095238095);
+
+        // In this case we get the full 100 DAI back as we also use (for the exit) the dust that remained in the proxy DAI balance in the vat
+        // The proxy function tries to return the wad amount if there is enough balance to do it
+        assertEq(dai.balanceOf(self), 100 ether);
+        // assertEq(dai.balanceOf(self), 99999999999999999999);
+        assertEq(pot.pie(address(savingsJoin)), 0);
+        assertEq(vat.dai(address(savingsJoin)), 0);
+        // assertEq(vat.dai(address(savingsJoin)), 250000000000000000000000000);
+        assertEq(vat.dai(address(daiJoin)), rad(100 ether));
+        // assertEq(vat.dai(address(daiJoin)), 99999999999999999999000000000000000000000000000);
+    }
+
+    function testDSRExitAll() public {
+        pot.file("dsr", uint(1.05 * 10 ** 27)); // 5% per second
+        uint initialTime = 1;
+        hevm.warp(initialTime);
+
+        dai.approve(address(proxy), 100 ether);
+        assertEq(dai.balanceOf(self), 100 ether);
+
+        this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
+        this.sDaiExitAll(address(daiJoin), address(savingsJoin));
+        assertEq(dai.balanceOf(self), 100 ether);
+    }
 }

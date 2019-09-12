@@ -46,8 +46,6 @@ contract JugLike {
 
 contract sDaiProxyActions {
 
-    event log(bytes32, uint);
-
     uint256 constant ONE = 10 ** 27;
 
     // Internal functions
@@ -126,9 +124,11 @@ contract sDaiProxyActions {
         // Otherwise it will do the maximum DAI balance in the vat
         DaiJoinLike(daiJoin).exit(
             msg.sender,
-            bal >= mul(pie, ONE) ? pie : bal / ONE
+            bal == mul(pie + 1, ONE) ? bal / ONE : pie
         );
     }
+
+    event log(bytes32, uint);
 
     function sDaiExitAll(
         address daiJoin,
@@ -140,15 +140,22 @@ contract sDaiProxyActions {
         // Executes drip to count the savings accumulated until this moment
         PotLike(pot).drip();
         // Gets the total sDai belonging to the proxy address
-        uint pie = DSTokenLike(sDai).balanceOf(address(this));
+        uint wad = DSTokenLike(sDai).balanceOf(address(this));
+        emit log("wad", wad);
         // Exits DAI from the sDai
-        DSTokenLike(sDai).approve(savingsJoin, pie);
+        DSTokenLike(sDai).approve(savingsJoin, wad);
         // Join Savings Dai back into the Vat
-        SavingsJoinLike(savingsJoin).join(msg.sender, pie);
+        SavingsJoinLike(savingsJoin).join(address(this), wad);
         // Allows adapter to access to proxy's DAI balance in the vat
         if (VatLike(vat).can(address(this), address(daiJoin)) == 0) {
             VatLike(vat).hope(daiJoin);
         }
-        DaiJoinLike(daiJoin).exit(msg.sender, mul(PotLike(pot).chi(), pie) / ONE);
+        // DaiJoinLike(daiJoin).exit(msg.sender, mul(PotLike(pot).chi(), pie) / ONE);
+        uint pie = mul(PotLike(pot).chi(), wad) / ONE;
+        uint bal = VatLike(vat).dai(address(this));
+        DaiJoinLike(daiJoin).exit(
+            msg.sender,
+            bal == mul(pie + 1, ONE) ? bal / ONE : pie
+        );
     }
 }

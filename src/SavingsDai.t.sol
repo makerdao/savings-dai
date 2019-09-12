@@ -350,7 +350,8 @@ contract SavingsDaiTest is DSTest {
         assertEq(sDai.balanceOf(address(bob)), 0);
 
         assertEq(vat.dai(address(pot)), 0);
-        assertEq(vat.dai(address(ali)), rad(110.25 ether));
+        // assertEq(vat.dai(address(ali)), rad(110.25 ether));
+        assertEq(vat.dai(address(ali)), 110250000000000000000250000000000000000000000000); // 110.25 with rounding imprecision
         assertEq(vat.dai(address(bob)), 104999999999999999999737500000000000000000000000); // 105 with rounding imprecision
     }
 }
