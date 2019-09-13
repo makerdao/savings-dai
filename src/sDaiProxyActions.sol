@@ -84,19 +84,18 @@ contract sDaiProxyActions {
         address savingsJoin,
         uint wad
     ) public {
-        address vat = address(SavingsJoinLike(savingsJoin).vat());
-        address pot = address(SavingsJoinLike(savingsJoin).pot());
-        address sDai = address(SavingsJoinLike(savingsJoin).sDai());
+        VatLike vat = SavingsJoinLike(savingsJoin).vat();
+        PotLike pot = SavingsJoinLike(savingsJoin).pot();
         // Executes drip to get the chi rate updated to rho == now, otherwise join will fail
-        PotLike(pot).drip();
+        pot.drip();
         // Joins wad amount to the vat balance
         daiJoin_join(daiJoin, address(this), wad);
         // Approves the adapter to take out DAI from the proxy's balance in the vat
-        if (VatLike(vat).can(address(this), address(savingsJoin)) == 0) {
-            VatLike(vat).hope(savingsJoin);
+        if (vat.can(address(this), address(savingsJoin)) == 0) {
+            vat.hope(savingsJoin);
         }
         // Exits the wad value (equivalent to the DAI wad amount) to Savings Dai
-        SavingsJoinLike(savingsJoin).exit(address(this), wad);
+        SavingsJoinLike(savingsJoin).exit(address(this), mul(wad, ONE) / pot.chi());
     }
 
     function sDaiExit(
@@ -104,58 +103,52 @@ contract sDaiProxyActions {
         address savingsJoin,
         uint wad
     ) public {
-        address vat = address(SavingsJoinLike(savingsJoin).vat());
-        address pot = address(SavingsJoinLike(savingsJoin).pot());
-        address sDai = address(SavingsJoinLike(savingsJoin).sDai());
+        VatLike vat = SavingsJoinLike(savingsJoin).vat();
+        PotLike pot = SavingsJoinLike(savingsJoin).pot();
+        DSTokenLike sDai = SavingsJoinLike(savingsJoin).sDai();
         // Executes drip to count the savings accumulated until this moment
-        PotLike(pot).drip();
+        pot.drip();
+        // Calculates the pie value in the pot equivalent to the DAI wad amount
+        uint pie = mul(wad, ONE) / pot.chi();
         // Exits DAI from the sDai
-        DSTokenLike(sDai).approve(savingsJoin, wad);
-        // Join Savings Dai back into the Vat
-        SavingsJoinLike(savingsJoin).join(address(this), wad);
+        sDai.approve(savingsJoin, pie);
+        SavingsJoinLike(savingsJoin).join(address(this), pie);
         // Checks the actual balance of DAI in the vat after the pot exit
-        uint pie = mul(PotLike(pot).chi(), wad) / ONE;
-        uint bal = VatLike(vat).dai(address(this));
+        uint bal = vat.dai(address(this));
         // Allows adapter to access to proxy's DAI balance in the vat
-        if (VatLike(vat).can(address(this), address(daiJoin)) == 0) {
-            VatLike(vat).hope(daiJoin);
+        if (vat.can(address(this), daiJoin) == 0) {
+            vat.hope(daiJoin);
         }
         // It is necessary to check if due rounding the exact wad amount can be exited by the adapter.
         // Otherwise it will do the maximum DAI balance in the vat
         DaiJoinLike(daiJoin).exit(
             msg.sender,
-            bal == mul(pie + 1, ONE) ? bal / ONE : pie
+            bal >= mul(wad, ONE) ? wad : bal / ONE
         );
     }
-
-    event log(bytes32, uint);
 
     function sDaiExitAll(
         address daiJoin,
         address savingsJoin
     ) public {
-        address vat = address(SavingsJoinLike(savingsJoin).vat());
-        address pot = address(SavingsJoinLike(savingsJoin).pot());
-        address sDai = address(SavingsJoinLike(savingsJoin).sDai());
+        VatLike vat = SavingsJoinLike(savingsJoin).vat();
+        PotLike pot = SavingsJoinLike(savingsJoin).pot();
+        DSTokenLike sDai = SavingsJoinLike(savingsJoin).sDai();
         // Executes drip to count the savings accumulated until this moment
-        PotLike(pot).drip();
+        pot.drip();
         // Gets the total sDai belonging to the proxy address
-        uint wad = DSTokenLike(sDai).balanceOf(address(this));
-        emit log("wad", wad);
+        uint pie = sDai.balanceOf(address(this));
         // Exits DAI from the sDai
-        DSTokenLike(sDai).approve(savingsJoin, wad);
+        sDai.approve(savingsJoin, pie);
         // Join Savings Dai back into the Vat
-        SavingsJoinLike(savingsJoin).join(address(this), wad);
+        SavingsJoinLike(savingsJoin).join(address(this), pie);
         // Allows adapter to access to proxy's DAI balance in the vat
-        if (VatLike(vat).can(address(this), address(daiJoin)) == 0) {
-            VatLike(vat).hope(daiJoin);
+        if (vat.can(address(this), address(daiJoin)) == 0) {
+            vat.hope(daiJoin);
         }
-        // DaiJoinLike(daiJoin).exit(msg.sender, mul(PotLike(pot).chi(), pie) / ONE);
-        uint pie = mul(PotLike(pot).chi(), wad) / ONE;
-        uint bal = VatLike(vat).dai(address(this));
         DaiJoinLike(daiJoin).exit(
             msg.sender,
-            bal == mul(pie + 1, ONE) ? bal / ONE : pie
+            mul(PotLike(pot).chi(), pie) / ONE
         );
     }
 }

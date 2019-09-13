@@ -330,7 +330,7 @@ contract SavingsDaiTest is DSTest {
         vat.suck(self, self, rad(100 ether));
         vat.move(self, address(bob), rad(100 ether));
         uint bobPie = mul(100 ether, ONE) / pot.chi();
-        bob.exit(address(join), address(bob), 100 ether);
+        bob.exit(address(join), address(bob), bobPie);
 
         assertEq(pot.pie(address(join)), (100 ether + bobPie));
         assertEq(sDai.balanceOf(address(bob)), bobPie);
@@ -350,8 +350,7 @@ contract SavingsDaiTest is DSTest {
         assertEq(sDai.balanceOf(address(bob)), 0);
 
         assertEq(vat.dai(address(pot)), 0);
-        // assertEq(vat.dai(address(ali)), rad(110.25 ether));
-        assertEq(vat.dai(address(ali)), 110250000000000000000250000000000000000000000000); // 110.25 with rounding imprecision
-        assertEq(vat.dai(address(bob)), 104999999999999999999737500000000000000000000000); // 105 with rounding imprecision
+        assertEq(vat.dai(address(ali)), rad(110.25 ether));
+        assertEq(vat.dai(address(bob)), 104999999999999999999987500000000000000000000000); // 105 with rounding imprecision
     }
 }
