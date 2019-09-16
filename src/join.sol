@@ -40,28 +40,24 @@ contract SavingsDaiJoin is DSNote{
         require((z = x + y) >= x);
     }
 
+    function sub(uint x, uint y) internal pure returns (uint z) {
+        require((z = x - y) <= x);
+    }
+
     function mul(uint x, uint y) internal pure returns (uint z) {
         require(y == 0 || (z = x * y) / y == x);
     }
 
     function join(address usr, uint wad) external note {
         sDai.burn(msg.sender, wad);
-        uint bal = vat.dai(address(this));
+        uint prevBal = vat.dai(address(this));
         pot.exit(wad);
-        uint dai = mul(wad, pot.chi());
-
-        // If the new balance minus the returned pie is dusty
-        // We should add the dust back in before moving from the Vat to the usr
-        if (vat.dai(address(this)) - mul(wad, pot.chi()) <= ONE + 1 / ONE) {
-            dai += vat.dai(address(this)) - mul(wad, pot.chi());
-        }
-        vat.move(address(this), usr, dai);
+        vat.move(address(this), usr, sub(vat.dai(address(this)), prevBal));
     }
 
     function exit(address usr, uint wad) external note {
-        vat.move(msg.sender, address(this), mul(wad, ONE));
-        uint pie = mul(wad, ONE) / pot.chi();
-        pot.join(pie);
-        sDai.mint(usr, pie);
+        vat.move(msg.sender, address(this), mul(wad, pot.chi()));
+        pot.join(wad);
+        sDai.mint(usr, wad);
     }
 }

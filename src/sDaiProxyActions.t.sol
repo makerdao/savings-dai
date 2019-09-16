@@ -153,7 +153,7 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         hevm.warp(initialTime + 1); // Moved 1 second
         pot.drip();
         assertEq(pot.pie(address(savingsJoin)) * pot.chi(), 105 ether * ONE); // Now the equivalent DAI amount is 5 DAI extra
-        this.sDaiExit(address(daiJoin), address(savingsJoin), 100 ether);
+        this.sDaiExit(address(daiJoin), address(savingsJoin), 105 ether);
         assertEq(dai.balanceOf(self), 105 ether);
         assertEq(sDai.balanceOf(address(proxy)), 0 ether);
         assertEq(pot.pie(address(proxy)), 0);
@@ -178,7 +178,7 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         hevm.warp(initialTime + 1);
         pot.drip(); // Just necessary to check in this test the updated value of chi
         assertEq(pot.pie(address(savingsJoin)) * pot.chi(), 104999999999999999999737500000000000000000000000);
-        this.sDaiExit(address(daiJoin), address(savingsJoin), 95238095238095238095);
+        this.sDaiExit(address(daiJoin), address(savingsJoin), 105 ether);
         assertEq(dai.balanceOf(self), 104999999999999999999);
         assertEq(pot.pie(address(proxy)), 0);
         assertEq(vat.dai(address(daiJoin)), 104999999999999999999000000000000000000000000000);
@@ -199,18 +199,15 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
         assertEq(sDai.totalSupply(), 95238095238095238095);
 
         assertEq(pot.pie(address(savingsJoin)) * pot.chi(), 99999999999999999999750000000000000000000000000);
-        assertEq(vat.dai(address(savingsJoin)), mul(100 ether, ONE) - 99999999999999999999750000000000000000000000000);
-        this.sDaiExit(address(daiJoin), address(savingsJoin), 95238095238095238095);
+        assertEq(vat.dai(address(savingsJoin)), 0);
+        this.sDaiExit(address(daiJoin), address(savingsJoin), 100 ether);
 
         // In this case we get the full 100 DAI back as we also use (for the exit) the dust that remained in the proxy DAI balance in the vat
         // The proxy function tries to return the wad amount if there is enough balance to do it
         assertEq(dai.balanceOf(self), 100 ether);
-        // assertEq(dai.balanceOf(self), 99999999999999999999);
         assertEq(pot.pie(address(savingsJoin)), 0);
         assertEq(vat.dai(address(savingsJoin)), 0);
-        // assertEq(vat.dai(address(savingsJoin)), 250000000000000000000000000);
         assertEq(vat.dai(address(daiJoin)), rad(100 ether));
-        // assertEq(vat.dai(address(daiJoin)), 99999999999999999999000000000000000000000000000);
     }
 
     function testDSRExitAll() public {
@@ -223,6 +220,6 @@ contract sDaiProxyActionsTest is DSTest, ProxyCalls {
 
         this.sDaiJoin(address(daiJoin), address(savingsJoin), 100 ether);
         this.sDaiExitAll(address(daiJoin), address(savingsJoin));
-        assertEq(dai.balanceOf(self), 100 ether);
+        assertEq(dai.balanceOf(self), 99999999999999999999);
     }
 }
